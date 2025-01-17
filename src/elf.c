@@ -66,7 +66,22 @@ void elf_write_code_int(int val)
     elf_code_idx = elf_write_int(elf_code, elf_code_idx, val);
 }
 
-void elf_generate_header()
+// dy
+void elf_generate_dynamic_sections()
+{
+    /* .interp section */
+    elf_write_section_str("/lib/ld-linux-aarch64.so.1", 20);
+
+    /* .dynamic section */
+    elf_write_section_int(1); /* DT_NEEDED */
+    elf_write_section_int(elf_strtab_index);
+    elf_write_section_int(0); /* End of dynamic section */
+
+    /* Update .strtab for glibc */
+    elf_write_section_str("libc.so.6", 10);
+}
+
+void elf_generate_header(int dynamic_linking_enabled)
 {
     /* ELF header */
     elf_write_header_int(0x464c457f); /* Magic: 0x7F followed by ELF */
@@ -101,6 +116,19 @@ void elf_generate_header()
     elf_write_header_byte(5); /* section index with names */
     elf_write_header_byte(0);
 
+    // dy
+    if (dynamic_linking_enabled) {
+        /* program header - PT_INTERP */
+        elf_write_header_int(3);                          /* PT_INTERP */
+        elf_write_header_int(elf_header_len);             /* offset of segment */
+        elf_write_header_int(ELF_START + elf_header_len); /* virtual address */
+        elf_write_header_int(ELF_START + elf_header_len); /* physical address */
+        elf_write_header_int(20);                         /* size in file */
+        elf_write_header_int(20);                         /* size in memory */
+        elf_write_header_int(4);                          /* flags */
+        elf_write_header_int(4);                          /* alignment */
+    }
+
     /* program header - code and data combined */
     elf_write_header_int(1);                           /* PT_LOAD */
     elf_write_header_int(elf_header_len);              /* offset of segment */
@@ -112,7 +140,7 @@ void elf_generate_header()
     elf_write_header_int(4);                           /* alignment */
 }
 
-void elf_generate_sections()
+void elf_generate_sections(int dynamic_linking_enabled)
 {
     /* symtab section */
     for (int b = 0; b < elf_symtab_index; b++)
@@ -134,6 +162,15 @@ void elf_generate_sections()
     elf_write_section_byte(0);
     elf_write_section_str(".strtab", 7);
     elf_write_section_byte(0);
+
+    // dy
+    if (dynamic_linking_enabled) {
+        /* Add dynamic sections */
+        elf_write_section_str(".interp", 7);
+        elf_write_section_byte(0);
+        elf_write_section_str(".dynamic", 8);
+        elf_write_section_byte(0);
+    }
 
     /* section header table */
 
@@ -210,6 +247,34 @@ void elf_generate_sections()
     elf_write_section_int(0);
     elf_write_section_int(1);
     elf_write_section_int(0);
+
+    // dy
+    if (dynamic_linking_enabled) {
+        /* .interp */
+        elf_write_section_int(1);
+        elf_write_section_int(1);
+        elf_write_section_int(0);
+        elf_write_section_int(ELF_START + elf_header_len);
+        elf_write_section_int(elf_header_len);
+        elf_write_section_int(20);
+        elf_write_section_int(0);
+        elf_write_section_int(0);
+        elf_write_section_int(1);
+        elf_write_section_int(0);
+
+        /* .dynamic */
+        elf_write_section_int(0x17);
+        elf_write_section_int(2);
+        elf_write_section_int(0);
+        elf_write_section_int(0);
+        elf_write_section_int(elf_header_len + elf_code_idx + elf_data_idx);
+        elf_write_section_int(12); /* size */
+        elf_write_section_int(4);
+        elf_write_section_int(0);
+        elf_write_section_int(1);
+        elf_write_section_int(0);
+    }
+
 }
 
 void elf_align()
@@ -240,7 +305,7 @@ void elf_add_symbol(char *symbol, int len, int pc)
     elf_symbol_index++;
 }
 
-void elf_generate(char *outfile)
+void elf_generate(int dynamic_linking_enabled, char *outfile)
 {
     elf_symbol_index = 0;
     elf_symtab_index = 0;
@@ -248,8 +313,12 @@ void elf_generate(char *outfile)
     elf_section_index = 0;
 
     elf_align();
-    elf_generate_header();
-    elf_generate_sections();
+    elf_generate_header(dynamic_linking_enabled);
+    elf_generate_sections(dynamic_linking_enabled);
+
+    if (dynamic_linking_enabled) {
+        elf_generate_dynamic_sections();
+    }
 
     if (!outfile)
         outfile = "a.out";

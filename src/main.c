@@ -46,6 +46,7 @@
 int main(int argc, char *argv[])
 {
     int libc = 1;
+    int dynamic_linking_enabled = 0;
     char *out = NULL, *in = NULL;
 
     for (int i = 1; i < argc; i++) {
@@ -55,6 +56,8 @@ int main(int argc, char *argv[])
             hard_mul_div = 1;
         else if (!strcmp(argv[i], "--no-libc"))
             libc = 0;
+        else if (!strcmp(argv[i], "--dynamic"))
+            dynamic_linking_enabled = 1;
         else if (!strcmp(argv[i], "-o")) {
             if (i < argc + 1) {
                 out = argv[i + 1];
@@ -62,7 +65,8 @@ int main(int argc, char *argv[])
             } else
                 /* unsupported options */
                 abort();
-        } else
+        } 
+        else
             in = argv[i];
     }
 
@@ -112,7 +116,7 @@ int main(int argc, char *argv[])
     code_generate();
 
     /* output code in ELF */
-    elf_generate(out);
+    elf_generate(dynamic_linking_enabled, out);
 
     /* release allocated objects */
     ssa_release();
