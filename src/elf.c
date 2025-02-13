@@ -221,7 +221,7 @@ void elf_generate_sections() {
     elf_write_section_int(3);
     elf_write_section_int(0);
     elf_write_section_int(0);
-    elf_write_section_int(elf_header_len + elf_code_idx + elf_data_idx + 16 + elf_symtab_index + elf_strtab_index);
+    elf_write_section_int(elf_header_len + elf_code_idx + elf_data_idx + 16 +D elf_symtab_index + elf_strtab_index);
     elf_write_section_int(48);
     elf_write_section_int(0);
     elf_write_section_int(0);
