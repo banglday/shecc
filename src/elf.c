@@ -72,7 +72,7 @@ void elf_generate_header() {
     elf_write_header_int(1);                          /* ELF version */
     elf_write_header_int(ELF_START + elf_header_len); /* entry point */
     elf_write_header_int(0x34);                       /* program header offset */
-    elf_write_header_int(elf_header_len + elf_code_idx + elf_data_idx + 48 + 32 + 16 +
+    elf_write_header_int(elf_header_len + elf_code_idx + elf_data_idx + 48 + 16 +
                          elf_symtab_index +
                          elf_strtab_index); /* section header offset */
     /* flags */
@@ -114,10 +114,9 @@ void elf_generate_header() {
 void elf_generate_sections() {
     /* .dynamic section*/
     elf_write_section_int(1); /* DT_NEEDED */
-    elf_write_section_int(elf_header_len + elf_code_idx + elf_data_idx +
-                          elf_symtab_index + 16); /* offset in .dynstr */
-    elf_write_section_int(0);                     /* DT_NULL */
-    elf_write_section_int(0);                     /* End of .dynamic */
+    elf_write_section_int(0); /* offset in .dynstr */
+    elf_write_section_int(0); /* DT_NULL */
+    elf_write_section_int(0); /* End of .dynamic */
 
     /* symtab section */
     for (int b = 0; b < elf_symtab_index; b++)
@@ -184,8 +183,8 @@ void elf_generate_sections() {
     elf_write_section_int(23);
     elf_write_section_int(6);
     elf_write_section_int(3);
-    elf_write_section_int(0);  // sh_addr
-    elf_write_section_int(0);  // sh_offset
+    elf_write_section_int(ELF_START + elf_header_len + elf_code_idx + elf_data_idx);  // sh_addr
+    elf_write_section_int(elf_header_len + elf_code_idx + elf_data_idx);              // sh_offset
     elf_write_section_int(16);
     elf_write_section_int(4);
     elf_write_section_int(0);
@@ -197,10 +196,10 @@ void elf_generate_sections() {
     elf_write_section_int(2);
     elf_write_section_int(0);
     elf_write_section_int(0);
-    elf_write_section_int(elf_header_len + elf_code_idx + elf_data_idx);
+    elf_write_section_int(elf_header_len + 16 + elf_code_idx + elf_data_idx);
     elf_write_section_int(elf_symtab_index); /* size */
     elf_write_section_int(4);
-    elf_write_section_int(elf_symbol_index);
+    elf_write_section_int(elf_symbol_index + 16);
     elf_write_section_int(4);
     elf_write_section_int(16);
 
@@ -222,8 +221,7 @@ void elf_generate_sections() {
     elf_write_section_int(3);
     elf_write_section_int(0);
     elf_write_section_int(0);
-    elf_write_section_int(elf_header_len + elf_code_idx + elf_data_idx +
-                          elf_symtab_index + elf_strtab_index);
+    elf_write_section_int(elf_header_len + elf_code_idx + elf_data_idx + 16 + elf_symtab_index + elf_strtab_index);
     elf_write_section_int(48);
     elf_write_section_int(0);
     elf_write_section_int(0);
